@@ -2374,7 +2374,124 @@
         }
     };
     checkAndInitSaveData();
+})();// ============================================================================
+// PATCH DE RENDERIZAÇÃO COMPUTADOR (16:9) CENTRALIZADO E ENTRADAS CORRIGIDAS
+(function() {
+    // AJUSTE MANUAL DE PROPORÇÃO: Mude esses dois números para controlar o campo de visão!
+    const DESIGN_WIDTH = 1600;   // Largura virtual de computador
+    const DESIGN_HEIGHT = 900;   // Altura virtual de computador
+
+    const ARENA_LIMIT = 2600;
+    let globalScale = 1;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    // 1. CORREÇÃO DE INPUTS (Cliques e Toques)
+    // Como escalamos o jogo, convertemos a posição física do mouse/dedo para o espaço virtual
+    const originalHandleShoot = handleShootInput;
+    handleShootInput = function(clientX, clientY) {
+        let virtualX = (clientX - offsetX) / globalScale;
+        let virtualY = (clientY - offsetY) / globalScale;
+        originalHandleShoot(virtualX, virtualY);
+    };
+
+    const originalUpdateJoystick = updateJoystickPosition;
+    updateJoystickPosition = function(clientX, clientY) {
+        let virtualX = (clientX - offsetX) / globalScale;
+        let virtualY = (clientY - offsetY) / globalScale;
+        originalUpdateJoystick(virtualX, virtualY);
+    };
+
+    // 2. TRAVA FÍSICA DOS INIMIGOS nas bordas da arena
+    const originalUpdateGame = updateGameData;
+    updateGameData = function() {
+        originalUpdateGame();
+        if (gameState === 'playing' && typeof entities !== 'undefined') {
+            entities.forEach(e => {
+                let limiteReal = ARENA_LIMIT - e.radius;
+                if (e.x < -limiteReal) e.x = -limiteReal;
+                if (e.x > limiteReal) e.x = limiteReal;
+                if (e.y < -limiteReal) e.y = -limiteReal;
+                if (e.y > limiteReal) e.y = limiteReal;
+            });
+        }
+    };
+
+    // 3. MATRIZ DE RENDERIZAÇÃO DINÂMICA
+    const originalRenderGraphics = renderGameGraphics;
+    renderGameGraphics = function() {
+        // Redefine o Canvas para ocupar 100% da tela física disponível no momento
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Calcula a proporção ideal baseada na janela atual (Evita o bug de sumir tudo)
+        const scaleX = canvas.width / DESIGN_WIDTH;
+        const scaleY = canvas.height / DESIGN_HEIGHT;
+        
+        // Mantém a escala uniforme (Se ficar de pé ou na diagonal, cria barras pretas organizadas)
+        globalScale = Math.min(scaleX, scaleY);
+
+        // Define o recuo para manter o retângulo do jogo perfeitamente centralizado
+        offsetX = (canvas.width - DESIGN_WIDTH * globalScale) / 2;
+        offsetY = (canvas.height - DESIGN_HEIGHT * globalScale) / 2;
+
+        // Ajusta o Analógico Fixo para ficar sempre acessível no canto inferior esquerdo
+        if (typeof joystick !== 'undefined') {
+            joystick.fixedX = 120; 
+            joystick.fixedY = canvas.height - 120;
+            if (!joystick.active) {
+                joystick.knobX = joystick.fixedX;
+                joystick.knobY = joystick.fixedY;
+            }
+        }
+
+        // Limpa o fundo com o preto absoluto para eliminar rastros e falhas azuis
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.fillStyle = '#020204';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+
+        // Aplica a escala proporcional e centralização na renderização
+        ctx.save();
+        ctx.translate(offsetX, offsetY);
+        ctx.scale(globalScale, globalScale);
+
+        // Adapta o cálculo da câmera para o tamanho virtual escolhido
+        let backupCamX = camX;
+        let backupCamY = camY;
+        if (typeof player !== 'undefined' && player) {
+            camX = player.x - DESIGN_WIDTH / 2;
+            camY = player.y - DESIGN_HEIGHT / 2;
+        }
+
+        // Desenha o jogo padrão
+        originalRenderGraphics();
+
+        // Máscara de Ocultação Externa (Esconde inimigos fora da parede)
+        if (gameState === 'playing') {
+            ctx.save();
+            ctx.translate(-camX, -camY);
+            ctx.fillStyle = '#000000';
+            const limite = ARENA_LIMIT + 15;
+            const grossura = 8000; // Margem gigante para cobrir áreas externas em qualquer rotação
+
+            ctx.fillRect(-limite - grossura, -limite - grossura, limite * 2 + grossura * 2, grossura);
+            ctx.fillRect(-limite - grossura, limite, limite * 2 + grossura * 2, grossura);
+            ctx.fillRect(-limite - grossura, -limite, grossura, limite * 2);
+            ctx.fillRect(limite, -limite, grossura, limite * 2);
+            ctx.restore();
+        }
+
+        ctx.restore(); // Fecha o bloco de escala para proteger as dimensões de interface
+
+        // Restaura as variáveis de posição da câmera para a física do motor continuar precisa
+        camX = backupCamX;
+        camY = backupCamY;
+    };
 })();
+// ============================================================================
+
     </script>
 </body>
 </html>
