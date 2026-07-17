@@ -2374,7 +2374,68 @@
         }
     };
     checkAndInitSaveData();
+})();// ============================================================================
+// PATCH FINAL: Correção Visual (Rastro Azul) e Limites de Entidades
+(function() {
+    const ARENA_LIMIT = 2600;
+
+    // 1. Prender os Inimigos dentro da Arena
+    const updateAnteriorParaFix = updateGameData;
+    updateGameData = function() {
+        updateAnteriorParaFix();
+
+        if (gameState === 'playing') {
+            entities.forEach(e => {
+                let limiteReal = ARENA_LIMIT - e.radius;
+                
+                // Exemplo prático: Se a coordenada do inimigo passar do limite,
+                // nós o "teleportamos" instantaneamente de volta para a borda.
+                if (e.x < -limiteReal) e.x = -limiteReal;
+                if (e.x > limiteReal) e.x = limiteReal;
+                if (e.y < -limiteReal) e.y = -limiteReal;
+                if (e.y > limiteReal) e.y = limiteReal;
+            });
+        }
+    };
+
+    // 2. Corrigir o "Negócio Azul" (Smearing) e Ocultar o Exterior
+    const renderAnteriorParaFix = renderGameGraphics;
+    renderGameGraphics = function() {
+        // A. Limpeza de Câmera Absoluta
+        // Zera as coordenadas do Canvas antes de qualquer tremor e pinta o fundo.
+        // Isso mata a falha visual do rastro azul pela raiz.
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0); 
+        ctx.fillStyle = '#020204'; 
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+
+        // B. Executa o desenho padrão do jogo (a malha e a câmera carregam aqui)
+        renderAnteriorParaFix();
+
+        // C. Máscara de Escuridão FORA da Arena
+        // Funciona como 4 fitas isolantes coladas ao redor da tela para tapar
+        // o que não deve ser visto (inimigos spawnando e o fim da malha).
+        if (gameState === 'playing' && player) {
+            ctx.save();
+            ctx.translate(-camX, -camY);
+            ctx.fillStyle = '#000000'; // Escuridão total
+            
+            const limite = ARENA_LIMIT + 15; // +15 de margem para não esconder sua linha Neon
+            const grossura = 5000; // Uma espessura massiva para tapar toda a área externa
+
+            // Desenhando os 4 bloqueios (Cima, Baixo, Esquerda, Direita)
+            ctx.fillRect(-limite - grossura, -limite - grossura, limite * 2 + grossura * 2, grossura);
+            ctx.fillRect(-limite - grossura, limite, limite * 2 + grossura * 2, grossura);
+            ctx.fillRect(-limite - grossura, -limite, grossura, limite * 2);
+            ctx.fillRect(limite, -limite, grossura, limite * 2);
+            
+            ctx.restore();
+        }
+    };
 })();
+// ============================================================================
+
     </script>
 </body>
 </html>
