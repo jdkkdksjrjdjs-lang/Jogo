@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<link rel="manifest" href="manifest.json">
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js');
+  }
+</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Survival Arena: Arise</title>
@@ -1026,9 +1032,9 @@
         let restartBtn = document.getElementById('btnRestartGame'); if (restartBtn) restartBtn.onclick = () => { startMatch(); };
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
         joystick.fixedY = canvas.height - 110; joystick.knobX = joystick.fixedX; joystick.knobY = joystick.fixedY;
-        loadGameData(); initBackgroundMenuAnimation(); detectDeviceAndLoad(); gameLoopFrame();// ============================================================================
+        loadGameData(); initBackgroundMenuAnimation(); detectDeviceAndLoad(); gameLoopFrame();
 (function() {
-    const ARENA_LIMIT = 2600; // Parede visível e muito distante do centro (0,0)
+    const ARENA_LIMIT = 2600; 
     function patchSaveDataStructure() {
         saveData.settings = saveData.settings || {};
         if (saveData.settings.joySize === undefined) saveData.settings.joySize = 65;
@@ -1051,9 +1057,10 @@
         GEAR_SLOTS.forEach(slot => {
             const item = saveData.equippedGear[slot];
             if (item) {
-                if (item.stat === 'hp') stats.hp += item.val * 5.0;   // Vida multiplicada por 5!
-                if (item.stat === 'dmg') stats.dmg += item.val * 4.5; // Dano aumentado em 4.5x!
-                if (item.stat === 'spd') stats.spd += item.val * 2.2; // Velocidade de locomoção ultra rápida!
+                if (item.stat === 'hp') stats.hp += item.val * 5.0;   
+                if (item.stat === 'dmg') stats.dmg += item.val * 4.5; 
+                if (item.stat === 'spd') stats.spd += item.val * 2.2;
+
             }
         });
         return stats;
@@ -1076,13 +1083,13 @@
                 type: isRunic ? 'runic_guardian' : 'ancient_shadow',
                 isBoss: false,
                 radius: isRunic ? 26 : 19,
-                color: isRunic ? '#00ffcc' : '#ff00ff', // Cores exclusivas para fácil identificação
-                speed: isRunic ? 0.9 : 1.3, // Monstros lentos para você dominar a arena
+                color: isRunic ? '#00ffcc' : '#ff00ff', 
+                speed: isRunic ? 0.9 : 1.3, 
                 hp: (isRunic ? 190 : 120) * mult,
                 maxHp: (isRunic ? 190 : 120) * mult,
                 points: isRunic ? 45 : 30,
                 isWave5Exclusive: true,
-                shieldHp: isRunic ? 60 : 0, // O guardião possui um escudo azul visível!
+                shieldHp: isRunic ? 60 : 0, 
                 pulseTimer: 0
             });
             triggerSystemAlert(`[SISTEMA] Um ${isRunic ? 'Guardião Rúnico' : 'Espectro Ancestral'} (Onda 5+) surgiu!`);
@@ -1153,7 +1160,7 @@
         }
         entities.forEach((e1, i) => {
             if (!e1.speedSlowed) {
-                e1.speed *= 1.8; // Inimigos muito mais lentos e equilibrados!
+                e1.speed *= 1.8; 
                 e1.speedSlowed = true;
             }
             for (let j = i + 1; j < entities.length; j++) {
@@ -1433,7 +1440,8 @@
     patchSaveDataStructure();
     injectSettingsMenuUI();
     checkHeadphones();
-})();// ============================================================================
+})();
+
 (function() {
     let screenShakeAmount = 0;
     let comboCount = 0;
@@ -1465,7 +1473,7 @@
     const originalTriggerSystemAlert = triggerSystemAlert;
     triggerSystemAlert = function(text) {
         originalTriggerSystemAlert(text);
-        saveGameData(); // Força gravação no LocalStorage
+        saveGameData(); 
     };
     const previousUpdateGameData = updateGameData;
     updateGameData = function() {
@@ -1477,7 +1485,7 @@
         if (gameState !== 'playing') return;
         if (screenShakeAmount > 0) screenShakeAmount *= 0.9;
         if (player && player.hp < lastPlayerLife) {
-            screenShakeAmount = 18; // Intensidade do tremor ao levar dano
+            screenShakeAmount = 18;
         }
         if (saveData.totalKills > lastRecordedKills) {
             let now = Date.now();
@@ -1599,7 +1607,7 @@
                 }
                 ctx.restore();
             }
-            ctx.restore(); // Sai da translação da câmera
+            ctx.restore(); 
             if (player.hp < player.maxHp * 0.25) {
                 let pulseAlpha = 0.15 + Math.sin(gameTime * 0.1) * 0.1;
                 let redGradient = ctx.createRadialGradient(
@@ -1615,9 +1623,9 @@
                 ctx.textAlign = 'center';
                 ctx.fillText("[SINAIS VITAIS CRÍTICOS - USE O DASH!]", canvas.width / 2, canvas.height - 180);
             }
-            ctx.save(); // Reabre o estado para evitar erros de balanceamento do Canvas original
+            ctx.save();
         }
-        ctx.restore(); // Restaura o tremor da tela
+        ctx.restore(); 
     };
     setTimeout(() => {
         triggerSystemAlert("[SISTEMA] Atualização de Combate carregada com sucesso!");
@@ -2158,7 +2166,7 @@
                 x: x, y: y, type: 'gatuno', isBoss: false,
                 radius: 18, color: '#f1c40f', speed: 3.5,
                 hp: 120 * (1 + currentWave * 0.15), maxHp: 120 * (1 + currentWave * 0.15),
-                points: 120, escapeTimer: 720 // Ele tem 12 segundos (720 frames) para fugir do jogador!
+                points: 120, escapeTimer: 720 
             });
             triggerSystemAlert(`[SISTEMA] Um Gatuno das Sombras surgiu! Elimine-o antes que ele fuja da arena!`);
             return;
@@ -2245,7 +2253,7 @@
         for (let i = drops.length - 1; i >= 0; i--) {
             let d = drops[i];
             if (d.despawnTimer === undefined) {
-                d.despawnTimer = retentionLvl >= 5 ? Infinity : (900 + (retentionLvl * 300)); // 15 segundos básicos + 5s por nível. Infinito no máximo.
+                d.despawnTimer = retentionLvl >= 5 ? Infinity : (900 + (retentionLvl * 300)); 
             }
             if (d.despawnTimer !== Infinity) {
                 d.despawnTimer--;
@@ -2374,35 +2382,27 @@
         }
     };
     checkAndInitSaveData();
-})();// ============================================================================
-// PATCH DE RENDERIZAÇÃO COMPUTADOR (16:9) CENTRALIZADO E ENTRADAS CORRIGIDAS
-(function() {
-    // AJUSTE MANUAL DE PROPORÇÃO: Mude esses dois números para controlar o campo de visão!
-    const DESIGN_WIDTH = 1600;   // Largura virtual de computador
-    const DESIGN_HEIGHT = 900;   // Altura virtual de computador
+})();
 
+(function() {
+    const DESIGN_WIDTH = 1600; 
+    const DESIGN_HEIGHT = 900;   
     const ARENA_LIMIT = 2600;
     let globalScale = 1;
     let offsetX = 0;
     let offsetY = 0;
-
-    // 1. CORREÇÃO DE INPUTS (Cliques e Toques)
-    // Como escalamos o jogo, convertemos a posição física do mouse/dedo para o espaço virtual
     const originalHandleShoot = handleShootInput;
     handleShootInput = function(clientX, clientY) {
         let virtualX = (clientX - offsetX) / globalScale;
         let virtualY = (clientY - offsetY) / globalScale;
         originalHandleShoot(virtualX, virtualY);
     };
-
     const originalUpdateJoystick = updateJoystickPosition;
     updateJoystickPosition = function(clientX, clientY) {
         let virtualX = (clientX - offsetX) / globalScale;
         let virtualY = (clientY - offsetY) / globalScale;
         originalUpdateJoystick(virtualX, virtualY);
     };
-
-    // 2. TRAVA FÍSICA DOS INIMIGOS nas bordas da arena
     const originalUpdateGame = updateGameData;
     updateGameData = function() {
         originalUpdateGame();
@@ -2416,26 +2416,15 @@
             });
         }
     };
-
-    // 3. MATRIZ DE RENDERIZAÇÃO DINÂMICA
     const originalRenderGraphics = renderGameGraphics;
     renderGameGraphics = function() {
-        // Redefine o Canvas para ocupar 100% da tela física disponível no momento
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-
-        // Calcula a proporção ideal baseada na janela atual (Evita o bug de sumir tudo)
         const scaleX = canvas.width / DESIGN_WIDTH;
         const scaleY = canvas.height / DESIGN_HEIGHT;
-        
-        // Mantém a escala uniforme (Se ficar de pé ou na diagonal, cria barras pretas organizadas)
         globalScale = Math.min(scaleX, scaleY);
-
-        // Define o recuo para manter o retângulo do jogo perfeitamente centralizado
         offsetX = (canvas.width - DESIGN_WIDTH * globalScale) / 2;
         offsetY = (canvas.height - DESIGN_HEIGHT * globalScale) / 2;
-
-        // Ajusta o Analógico Fixo para ficar sempre acessível no canto inferior esquerdo
         if (typeof joystick !== 'undefined') {
             joystick.fixedX = 120; 
             joystick.fixedY = canvas.height - 120;
@@ -2444,54 +2433,47 @@
                 joystick.knobY = joystick.fixedY;
             }
         }
-
-        // Limpa o fundo com o preto absoluto para eliminar rastros e falhas azuis
         ctx.save();
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.fillStyle = '#020204';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.restore();
-
-        // Aplica a escala proporcional e centralização na renderização
         ctx.save();
         ctx.translate(offsetX, offsetY);
         ctx.scale(globalScale, globalScale);
-
-        // Adapta o cálculo da câmera para o tamanho virtual escolhido
         let backupCamX = camX;
         let backupCamY = camY;
         if (typeof player !== 'undefined' && player) {
             camX = player.x - DESIGN_WIDTH / 2;
             camY = player.y - DESIGN_HEIGHT / 2;
         }
-
-        // Desenha o jogo padrão
         originalRenderGraphics();
-
-        // Máscara de Ocultação Externa (Esconde inimigos fora da parede)
         if (gameState === 'playing') {
             ctx.save();
             ctx.translate(-camX, -camY);
             ctx.fillStyle = '#000000';
             const limite = ARENA_LIMIT + 15;
-            const grossura = 8000; // Margem gigante para cobrir áreas externas em qualquer rotação
-
+            const grossura = 8000; 
             ctx.fillRect(-limite - grossura, -limite - grossura, limite * 2 + grossura * 2, grossura);
             ctx.fillRect(-limite - grossura, limite, limite * 2 + grossura * 2, grossura);
             ctx.fillRect(-limite - grossura, -limite, grossura, limite * 2);
             ctx.fillRect(limite, -limite, grossura, limite * 2);
             ctx.restore();
         }
-
-        ctx.restore(); // Fecha o bloco de escala para proteger as dimensões de interface
-
-        // Restaura as variáveis de posição da câmera para a física do motor continuar precisa
+        ctx.restore(); 
         camX = backupCamX;
         camY = backupCamY;
     };
 })();
-// ============================================================================
 
+
+<link rel="manifest" href="manifest.json">
+
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js');
+  }
     </script>
 </body>
 </html>
